@@ -105,8 +105,27 @@ static bool protopirate_emulate_update_data(EmulateContext *ctx, uint8_t button)
     }
 
     // For protocols with complex encoding, we need to regenerate the Key data
-    // This would require protocol-specific encoding functions
-    // For now, we'll update the raw fields
+    const char *proto_name = furi_string_get_cstr(ctx->protocol_name);
+    const SubGhzProtocol *protocol = NULL;
+    for (size_t i = 0; i < protopirate_protocol_registry.size; i++)
+    {
+        if (strcmp(protopirate_protocol_registry.items[i]->name, proto_name) == 0)
+        {
+            protocol = protopirate_protocol_registry.items[i];
+            break;
+        }
+    }
+
+    // If the protocol has an encoder, re-deserialize the updated data into the transmitter
+    // This will prepare the transmitter to encode the new data upon yielding
+    if (protocol && protocol->encoder && protocol->encoder->serialize && ctx->transmitter)
+    {
+        flipper_format_rewind(ctx->flipper_format);
+        if(!subghz_transmitter_deserialize(ctx->transmitter, ctx->flipper_format)) {
+            FURI_LOG_E(TAG, "Failed to deserialize for re-encoding");
+            return false;
+        }
+    }
 
     return true;
 }
