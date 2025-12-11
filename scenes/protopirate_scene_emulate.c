@@ -118,7 +118,7 @@ static bool protopirate_emulate_update_data(EmulateContext *ctx, uint8_t button)
 
     // If the protocol has an encoder, re-deserialize the updated data into the transmitter
     // This will prepare the transmitter to encode the new data upon yielding
-    if (protocol && protocol->encoder && protocol->encoder->serialize && ctx->transmitter)
+    if (protocol && protocol->encoder && protocol->encoder->deserialize && ctx->transmitter)
     {
         flipper_format_rewind(ctx->flipper_format);
         if(!subghz_transmitter_deserialize(ctx->transmitter, ctx->flipper_format)) {

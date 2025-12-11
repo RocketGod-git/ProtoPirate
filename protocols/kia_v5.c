@@ -25,7 +25,19 @@ struct SubGhzProtocolEncoderKiaV5
     SubGhzProtocolEncoderBase base;
     SubGhzProtocolBlockEncoder encoder;
     SubGhzBlockGeneric generic;
+
+    bool is_running;
+    size_t preamble_count;
+    size_t data_bit_index;
+    bool send_high;
 };
+
+void* kia_protocol_encoder_v5_alloc(SubGhzEnvironment* environment);
+void kia_protocol_encoder_v5_free(void* context);
+SubGhzProtocolStatus
+    kia_protocol_encoder_v5_deserialize(void* context, FlipperFormat* flipper_format);
+void kia_protocol_encoder_v5_stop(void* context);
+LevelDuration kia_protocol_encoder_v5_yield(void* context);
 
 typedef enum
 {
@@ -46,11 +58,11 @@ const SubGhzProtocolDecoder kia_protocol_v5_decoder = {
 };
 
 const SubGhzProtocolEncoder kia_protocol_v5_encoder = {
-    .alloc = NULL,
-    .free = NULL,
-    .deserialize = NULL,
-    .stop = NULL,
-    .yield = NULL,
+    .alloc = kia_protocol_encoder_v5_alloc,
+    .free = kia_protocol_encoder_v5_free,
+    .deserialize = kia_protocol_encoder_v5_deserialize,
+    .stop = kia_protocol_encoder_v5_stop,
+    .yield = kia_protocol_encoder_v5_yield,
 };
 
 const SubGhzProtocol kia_protocol_v5 = {
@@ -60,6 +72,20 @@ const SubGhzProtocol kia_protocol_v5 = {
     .decoder = &kia_protocol_v5_decoder,
     .encoder = &kia_protocol_v5_encoder,
 };
+
+void* kia_protocol_encoder_v5_alloc(SubGhzEnvironment* environment) {
+    UNUSED(environment);
+    SubGhzProtocolEncoderKiaV5* instance = malloc(sizeof(SubGhzProtocolEncoderKiaV5));
+    instance->base.protocol = &kia_protocol_v5;
+    instance->generic.protocol_name = instance->base.protocol->name;
+    return instance;
+}
+
+void kia_protocol_encoder_v5_free(void* context) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV5* instance = context;
+    free(instance);
+}
 
 static void kia_v5_add_raw_bit(SubGhzProtocolDecoderKiaV5 *instance, bool bit)
 {
@@ -363,4 +389,91 @@ void kia_protocol_decoder_v5_get_string(void *context, FuriString *output)
         instance->generic.serial,
         instance->generic.btn,
         instance->generic.cnt);
+}
+
+SubGhzProtocolStatus
+    kia_protocol_encoder_v5_deserialize(void* context, FlipperFormat* flipper_format) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV5* instance = context;
+    SubGhzProtocolStatus res = subghz_block_generic_deserialize_check_count_bit(
+        &instance->generic, flipper_format, kia_protocol_v5_const.min_count_bit_for_found);
+    if(res == SubGhzProtocolStatusOk) {
+        flipper_format_read_uint32(flipper_format, "Serial", &instance->generic.serial, 1);
+        uint32_t btn_temp;
+        flipper_format_read_uint32(flipper_format, "Btn", &btn_temp, 1);
+        instance->generic.btn = (uint8_t)btn_temp;
+        flipper_format_read_uint32(flipper_format, "Cnt", &instance->generic.cnt, 1);
+    }
+    return res;
+}
+
+void kia_protocol_encoder_v5_stop(void* context) {
+    SubGhzProtocolEncoderKiaV5* instance = context;
+    instance->is_running = false;
+}
+
+LevelDuration kia_protocol_encoder_v5_yield(void* context) {
+    SubGhzProtocolEncoderKiaV5* instance = context;
+
+    if(!instance->is_running) {
+        instance->is_running = true;
+        instance->preamble_count = 0;
+        instance->data_bit_index = 0;
+        instance->send_high = true;
+
+        // Reconstruct yek
+        uint64_t serial_shifted = (uint64_t)instance->generic.serial << 1;
+        uint64_t yek = ((uint64_t)instance->generic.btn << 61) |
+                       (serial_shifted << 32) |
+                       (instance->generic.cnt);
+
+        // Bit-reverse each byte to get the final data
+        uint64_t data = 0;
+        for (int i = 0; i < 8; i++)
+        {
+            uint8_t byte = (yek >> ((7 - i) * 8)) & 0xFF;
+            uint8_t reversed = 0;
+            for (int b = 0; b < 8; b++)
+            {
+                if (byte & (1 << b))
+                    reversed |= (1 << (7 - b));
+            }
+            data |= ((uint64_t)reversed << (i * 8));
+        }
+        instance->generic.data = data;
+    }
+
+    // Preamble
+    if(instance->preamble_count < 42) {
+        instance->preamble_count++;
+        if(instance->preamble_count % 2 != 0) {
+            return level_duration_make(true, kia_protocol_v5_const.te_short);
+        } else {
+            return level_duration_make(false, kia_protocol_v5_const.te_short);
+        }
+    }
+
+    // Sync
+    if(instance->preamble_count == 42) {
+        instance->preamble_count++;
+        return level_duration_make(false, kia_protocol_v5_const.te_long);
+    }
+
+    // Data
+    if(instance->data_bit_index < 64) {
+        uint64_t bit_mask = 1ULL << (63 - instance->data_bit_index);
+        bool bit = (instance->generic.data & bit_mask) ? 1 : 0;
+
+        if(instance->send_high) {
+            instance->send_high = false;
+            return level_duration_make(bit, kia_protocol_v5_const.te_short);
+        } else {
+            instance->send_high = true;
+            instance->data_bit_index++;
+            return level_duration_make(!bit, kia_protocol_v5_const.te_short);
+        }
+    }
+
+    kia_protocol_encoder_v5_stop(context);
+    return level_duration_reset();
 }

@@ -25,7 +25,21 @@ struct SubGhzProtocolEncoderKiaV2
     SubGhzProtocolEncoderBase base;
     SubGhzProtocolBlockEncoder encoder;
     SubGhzBlockGeneric generic;
+
+    uint8_t crc;
+    uint16_t raw_cnt;
+    bool is_running;
+    size_t preamble_count;
+    size_t data_bit_index;
+    bool send_high;
 };
+
+void* kia_protocol_encoder_v2_alloc(SubGhzEnvironment* environment);
+void kia_protocol_encoder_v2_free(void* context);
+SubGhzProtocolStatus
+    kia_protocol_encoder_v2_deserialize(void* context, FlipperFormat* flipper_format);
+void kia_protocol_encoder_v2_stop(void* context);
+LevelDuration kia_protocol_encoder_v2_yield(void* context);
 
 typedef enum
 {
@@ -46,11 +60,11 @@ const SubGhzProtocolDecoder kia_protocol_v2_decoder = {
 };
 
 const SubGhzProtocolEncoder kia_protocol_v2_encoder = {
-    .alloc = NULL,
-    .free = NULL,
-    .deserialize = NULL,
-    .stop = NULL,
-    .yield = NULL,
+    .alloc = kia_protocol_encoder_v2_alloc,
+    .free = kia_protocol_encoder_v2_free,
+    .deserialize = kia_protocol_encoder_v2_deserialize,
+    .stop = kia_protocol_encoder_v2_stop,
+    .yield = kia_protocol_encoder_v2_yield,
 };
 
 const SubGhzProtocol kia_protocol_v2 = {
@@ -61,6 +75,20 @@ const SubGhzProtocol kia_protocol_v2 = {
     .decoder = &kia_protocol_v2_decoder,
     .encoder = &kia_protocol_v2_encoder,
 };
+
+void* kia_protocol_encoder_v2_alloc(SubGhzEnvironment* environment) {
+    UNUSED(environment);
+    SubGhzProtocolEncoderKiaV2* instance = malloc(sizeof(SubGhzProtocolEncoderKiaV2));
+    instance->base.protocol = &kia_protocol_v2;
+    instance->generic.protocol_name = instance->base.protocol->name;
+    return instance;
+}
+
+void kia_protocol_encoder_v2_free(void* context) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV2* instance = context;
+    free(instance);
+}
 
 static void kia_v2_add_raw_bit(SubGhzProtocolDecoderKiaV2 *instance, bool bit)
 {
@@ -348,4 +376,115 @@ void kia_protocol_decoder_v2_get_string(void *context, FuriString *output)
         instance->generic.btn,
         instance->generic.cnt,
         crc);
+}
+
+SubGhzProtocolStatus
+    kia_protocol_encoder_v2_deserialize(void* context, FlipperFormat* flipper_format) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV2* instance = context;
+    SubGhzProtocolStatus res = subghz_block_generic_deserialize_check_count_bit(
+        &instance->generic, flipper_format, kia_protocol_v2_const.min_count_bit_for_found);
+    if(res == SubGhzProtocolStatusOk) {
+        // Essential fields for re-encoding
+        flipper_format_read_uint32(flipper_format, "Serial", &instance->generic.serial, 1);
+        uint32_t btn_temp;
+        flipper_format_read_uint32(flipper_format, "Btn", &btn_temp, 1);
+        instance->generic.btn = (uint8_t)btn_temp;
+        flipper_format_read_uint32(flipper_format, "Cnt", &instance->generic.cnt, 1);
+        uint32_t crc_temp;
+        flipper_format_read_uint32(flipper_format, "CRC", &crc_temp, 1);
+        instance->crc = (uint8_t)crc_temp;
+        uint32_t raw_cnt_temp;
+        flipper_format_read_uint32(flipper_format, "RawCnt", &raw_cnt_temp, 1);
+        instance->raw_cnt = (uint16_t)raw_cnt_temp;
+    }
+    return res;
+}
+
+static uint8_t crc4(const uint8_t* data, size_t len) {
+    uint8_t crc = 0;
+    for (size_t i = 0; i < len; i++) {
+        crc ^= data[i];
+        for (int j = 0; j < 8; j++) {
+            if (crc & 0x80) {
+                crc = (crc << 1) ^ 0x09;
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    return crc >> 4;
+}
+
+void kia_protocol_encoder_v2_stop(void* context) {
+    SubGhzProtocolEncoderKiaV2* instance = context;
+    instance->is_running = false;
+}
+
+LevelDuration kia_protocol_encoder_v2_yield(void* context) {
+    SubGhzProtocolEncoderKiaV2* instance = context;
+
+    if(!instance->is_running) {
+        // Start a new transmission
+        instance->is_running = true;
+        instance->preamble_count = 0;
+        instance->data_bit_index = 0;
+        instance->send_high = true;
+
+        // Reconstruct the 51-bit data with updated fields
+        uint16_t raw_count = ((instance->generic.cnt << 4) | (instance->generic.cnt >> 8)) & 0xFFF;
+
+        uint8_t data_for_crc[6];
+        data_for_crc[0] = (instance->generic.serial >> 24) & 0xFF;
+        data_for_crc[1] = (instance->generic.serial >> 16) & 0xFF;
+        data_for_crc[2] = (instance->generic.serial >> 8) & 0xFF;
+        data_for_crc[3] = instance->generic.serial & 0xFF;
+        data_for_crc[4] = instance->generic.btn;
+        data_for_crc[5] = raw_count;
+        instance->crc = crc4(data_for_crc, sizeof(data_for_crc));
+
+        instance->generic.data = ((uint64_t)instance->generic.serial << 20) |
+                                 ((uint64_t)instance->generic.btn << 16) |
+                                 ((uint64_t)raw_count << 4) |
+                                 instance->crc;
+    }
+
+    // Preamble
+    if(instance->preamble_count < 12) {
+        instance->preamble_count++;
+        if(instance->preamble_count % 2 != 0) {
+            return level_duration_make(true, kia_protocol_v2_const.te_long);
+        } else {
+            return level_duration_make(false, kia_protocol_v2_const.te_long);
+        }
+    }
+
+    // Sync
+    if(instance->preamble_count == 12) {
+        instance->preamble_count++;
+        return level_duration_make(true, kia_protocol_v2_const.te_short);
+    }
+    if(instance->preamble_count == 13) {
+        instance->preamble_count++;
+        return level_duration_make(false, kia_protocol_v2_const.te_short);
+    }
+
+    // Data bits
+    if(instance->data_bit_index < instance->generic.data_count_bit) {
+        // Manchester encoding: 1 -> 10, 0 -> 01
+        uint64_t bit_mask = 1ULL << (instance->generic.data_count_bit - 1 - instance->data_bit_index);
+        bool bit = (instance->generic.data & bit_mask) ? 1 : 0;
+
+        if(instance->send_high) {
+            instance->send_high = false;
+            return level_duration_make(bit, kia_protocol_v2_const.te_short);
+        } else {
+            instance->send_high = true;
+            instance->data_bit_index++;
+            return level_duration_make(!bit, kia_protocol_v2_const.te_short);
+        }
+    }
+
+    kia_protocol_encoder_v2_stop(context);
+    return level_duration_reset();
 }
