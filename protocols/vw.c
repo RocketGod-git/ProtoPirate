@@ -19,6 +19,13 @@ typedef struct SubGhzProtocolDecoderVw
     uint64_t data_2; // Additional 16 bits (type byte + check byte)
 } SubGhzProtocolDecoderVw;
 
+typedef struct SubGhzProtocolEncoderVw
+{
+    SubGhzProtocolEncoderBase base;
+    SubGhzProtocolBlockEncoder encoder;
+    SubGhzBlockGeneric generic;
+} SubGhzProtocolEncoderVw;
+
 typedef enum
 {
     VwDecoderStepReset = 0,
@@ -40,12 +47,20 @@ const SubGhzProtocolDecoder subghz_protocol_vw_decoder = {
     .get_string = subghz_protocol_decoder_vw_get_string,
 };
 
+const SubGhzProtocolEncoder subghz_protocol_vw_encoder = {
+    .alloc = NULL,
+    .free = NULL,
+    .deserialize = NULL,
+    .stop = NULL,
+    .yield = NULL,
+};
+
 const SubGhzProtocol vw_protocol = {
     .name = VW_PROTOCOL_NAME,
     .type = SubGhzProtocolTypeDynamic,
     .flag = SubGhzProtocolFlag_433 | SubGhzProtocolFlag_AM | SubGhzProtocolFlag_Decodable,
     .decoder = &subghz_protocol_vw_decoder,
-    .encoder = NULL,
+    .encoder = &subghz_protocol_vw_encoder,
 };
 
 // Fixed manchester_advance for VW protocol

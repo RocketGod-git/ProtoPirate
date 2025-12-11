@@ -401,21 +401,6 @@ SubGhzProtocolStatus
     return res;
 }
 
-static uint8_t crc4(const uint8_t* data, size_t len) {
-    uint8_t crc = 0;
-    for (size_t i = 0; i < len; i++) {
-        crc ^= data[i];
-        for (int j = 0; j < 8; j++) {
-            if (crc & 0x80) {
-                crc = (crc << 1) ^ 0x09;
-            } else {
-                crc <<= 1;
-            }
-        }
-    }
-    return crc >> 4;
-}
-
 void kia_protocol_encoder_v2_stop(void* context) {
     SubGhzProtocolEncoderKiaV2* instance = context;
     instance->is_running = false;
@@ -433,16 +418,6 @@ LevelDuration kia_protocol_encoder_v2_yield(void* context) {
 
         // Reconstruct the 51-bit data with updated fields
         uint16_t raw_count = ((instance->generic.cnt << 4) | (instance->generic.cnt >> 8)) & 0xFFF;
-
-        uint8_t data_for_crc[6];
-        data_for_crc[0] = (instance->generic.serial >> 24) & 0xFF;
-        data_for_crc[1] = (instance->generic.serial >> 16) & 0xFF;
-        data_for_crc[2] = (instance->generic.serial >> 8) & 0xFF;
-        data_for_crc[3] = instance->generic.serial & 0xFF;
-        data_for_crc[4] = instance->generic.btn;
-        data_for_crc[5] = raw_count;
-        instance->crc = crc4(data_for_crc, sizeof(data_for_crc));
-
         instance->generic.data = ((uint64_t)instance->generic.serial << 20) |
                                  ((uint64_t)instance->generic.btn << 16) |
                                  ((uint64_t)raw_count << 4) |

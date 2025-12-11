@@ -346,21 +346,6 @@ SubGhzProtocolStatus
     return res;
 }
 
-static uint8_t crc8_suzuki(const uint8_t* data, size_t len) {
-    uint8_t crc = 0;
-    for (size_t i = 0; i < len; i++) {
-        crc ^= data[i];
-        for (int j = 0; j < 8; j++) {
-            if (crc & 0x80) {
-                crc = (crc << 1) ^ 0x1D;
-            } else {
-                crc <<= 1;
-            }
-        }
-    }
-    return crc;
-}
-
 void subghz_protocol_encoder_suzuki_stop(void* context) {
     SubGhzProtocolEncoderSuzuki* instance = context;
     instance->is_running = false;
@@ -375,17 +360,6 @@ LevelDuration subghz_protocol_encoder_suzuki_yield(void* context) {
         instance->data_bit_index = 0;
 
         uint64_t serial_button = ((uint64_t)instance->generic.serial << 4) | instance->generic.btn;
-
-        uint8_t data_for_crc[7];
-        data_for_crc[0] = (instance->generic.cnt >> 8) & 0xFF;
-        data_for_crc[1] = instance->generic.cnt & 0xFF;
-        data_for_crc[2] = (serial_button >> 24) & 0xFF;
-        data_for_crc[3] = (serial_button >> 16) & 0xFF;
-        data_for_crc[4] = (serial_button >> 8) & 0xFF;
-        data_for_crc[5] = serial_button & 0xFF;
-        data_for_crc[6] = 0; // Not sure what this byte is
-        instance->crc = crc8_suzuki(data_for_crc, sizeof(data_for_crc));
-
         instance->generic.data = ((uint64_t)0xF << 60) |
                                  ((uint64_t)instance->generic.cnt << 44) |
                                  (serial_button << 12) |

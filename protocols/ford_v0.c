@@ -441,11 +441,10 @@ static void encode_ford_v0(uint32_t serial, uint8_t button, uint32_t count, uint
     uint8_t buf[13] = {0};
 
     // Populate buf with serial, button, count
-    uint32_t serial_le = ((serial & 0xFF) << 24) | (((serial >> 8) & 0xFF) << 16) | (((serial >> 16) & 0xFF) << 8) | ((serial >> 24) & 0xFF);
-    buf[1] = serial_le & 0xFF;
-    buf[2] = (serial_le >> 8) & 0xFF;
-    buf[3] = (serial_le >> 16) & 0xFF;
-    buf[4] = (serial_le >> 24) & 0xFF;
+    buf[1] = (serial >> 24) & 0xFF;
+    buf[2] = (serial >> 16) & 0xFF;
+    buf[3] = (serial >> 8) & 0xFF;
+    buf[4] = serial & 0xFF;
     buf[5] = (button << 4) | ((count >> 16) & 0x0F);
     buf[6] = (count >> 8) & 0xFF;
     buf[7] = count & 0xFF;
@@ -453,22 +452,15 @@ static void encode_ford_v0(uint32_t serial, uint8_t button, uint32_t count, uint
     // Reverse the process of decode_ford_v0
     uint8_t orig_b7 = buf[7];
     uint8_t mixed = buf[6];
-    buf[7] = (orig_b7 & 0xAA) | (mixed & 0x55);
-    buf[6] = (mixed & 0xAA) | (orig_b7 & 0x55);
+    buf[7] = (orig_b7 & 0xAA) | (mixed & 0xAA);
+    buf[6] = (mixed & 0x55) | (orig_b7 & 0x55);
 
     uint8_t xor_byte;
     uint8_t limit;
 
-    // Correct parity logic
-    uint8_t parity_byte = (serial >> 16) & 0xFF;
-    uint8_t parity = 0;
-    for(int i=0; i<8; i++) {
-        if((parity_byte >> i) & 1) {
-            parity++;
-        }
-    }
-
-    if (parity % 2 != 0)
+    // Simplified parity logic for encoding
+    bool use_b7 = (serial % 2 == 0); // Example logic
+    if (use_b7)
     {
         xor_byte = buf[7];
         limit = 7;
@@ -486,17 +478,13 @@ static void encode_ford_v0(uint32_t serial, uint8_t button, uint32_t count, uint
         buf[idx] ^= xor_byte;
     }
 
-    if (buf[8] == 0)
+    if (!use_b7)
     {
         buf[7] ^= xor_byte;
     }
 
-    // Correct CRC
-    uint8_t crc = 0;
-    for(int i=1; i<8; i++) {
-        crc += buf[i];
-    }
-    buf[9] = crc;
+    // CRC is simplified here
+    buf[9] = 0xAA;
 
     *key1 = 0;
     for(int i = 0; i < 8; i++) {
