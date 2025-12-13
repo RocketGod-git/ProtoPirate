@@ -12,6 +12,8 @@ static const SubGhzBlockConst kia_protocol_v3_v4_const = {
     .min_count_bit_for_found = 64,
 };
 
+#define KIA_V3_V4_SYNC_DURATION 1200
+
 typedef struct SubGhzProtocolDecoderKiaV3V4
 {
     SubGhzProtocolDecoderBase base;
@@ -33,7 +35,20 @@ typedef struct SubGhzProtocolEncoderKiaV3V4
     SubGhzProtocolEncoderBase base;
     SubGhzProtocolBlockEncoder encoder;
     SubGhzBlockGeneric generic;
+
+    uint8_t version; // 0=V4, 1=V3
+    bool is_running;
+    size_t preamble_count;
+    size_t data_bit_index;
+    bool send_low;
 } SubGhzProtocolEncoderKiaV3V4;
+
+void* kia_protocol_encoder_v3_v4_alloc(SubGhzEnvironment* environment);
+void kia_protocol_encoder_v3_v4_free(void* context);
+SubGhzProtocolStatus
+    kia_protocol_encoder_v3_v4_deserialize(void* context, FlipperFormat* flipper_format);
+void kia_protocol_encoder_v3_v4_stop(void* context);
+LevelDuration kia_protocol_encoder_v3_v4_yield(void* context);
 
 typedef enum
 {
@@ -155,11 +170,11 @@ const SubGhzProtocolDecoder kia_protocol_v3_v4_decoder = {
 };
 
 const SubGhzProtocolEncoder kia_protocol_v3_v4_encoder = {
-    .alloc = NULL,
-    .free = NULL,
-    .deserialize = NULL,
-    .stop = NULL,
-    .yield = NULL,
+    .alloc = kia_protocol_encoder_v3_v4_alloc,
+    .free = kia_protocol_encoder_v3_v4_free,
+    .deserialize = kia_protocol_encoder_v3_v4_deserialize,
+    .stop = kia_protocol_encoder_v3_v4_stop,
+    .yield = kia_protocol_encoder_v3_v4_yield,
 };
 
 const SubGhzProtocol kia_protocol_v3_v4 = {
@@ -170,6 +185,20 @@ const SubGhzProtocol kia_protocol_v3_v4 = {
     .decoder = &kia_protocol_v3_v4_decoder,
     .encoder = &kia_protocol_v3_v4_encoder,
 };
+
+void* kia_protocol_encoder_v3_v4_alloc(SubGhzEnvironment* environment) {
+    UNUSED(environment);
+    SubGhzProtocolEncoderKiaV3V4* instance = malloc(sizeof(SubGhzProtocolEncoderKiaV3V4));
+    instance->base.protocol = &kia_protocol_v3_v4;
+    instance->generic.protocol_name = instance->base.protocol->name;
+    return instance;
+}
+
+void kia_protocol_encoder_v3_v4_free(void* context) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV3V4* instance = context;
+    free(instance);
+}
 
 void *kia_protocol_decoder_v3_v4_alloc(SubGhzEnvironment *environment)
 {
@@ -391,4 +420,124 @@ void kia_protocol_decoder_v3_v4_get_string(void *context, FuriString *output)
         instance->generic.cnt,
         instance->encrypted,
         instance->decrypted);
+}
+
+// KeeLoq encrypt
+static uint32_t keeloq_common_encrypt(uint32_t data, uint64_t key) {
+    uint32_t block = data;
+    uint64_t tkey = key;
+    for (int i = 0; i < 528; i++)
+    {
+        int lutkey = ((block >> 1) & 1) | ((block >> 8) & 2) | ((block >> 18) & 4) |
+                     ((block >> 23) & 8) | ((block >> 27) & 16);
+        int lsb =
+            ((block >> 0) & 1) ^ ((block >> 16) & 1) ^ ((0x3A5C742E >> lutkey) & 1) ^
+             ((tkey >> (i & 63)) & 1);
+        block = (block >> 1) | (lsb << 31);
+    }
+    return block;
+}
+
+SubGhzProtocolStatus
+    kia_protocol_encoder_v3_v4_deserialize(void* context, FlipperFormat* flipper_format) {
+    furi_assert(context);
+    SubGhzProtocolEncoderKiaV3V4* instance = context;
+    SubGhzProtocolStatus res = subghz_block_generic_deserialize_check_count_bit(
+        &instance->generic, flipper_format, kia_protocol_v3_v4_const.min_count_bit_for_found);
+    if(res == SubGhzProtocolStatusOk) {
+        flipper_format_read_uint32(flipper_format, "Serial", &instance->generic.serial, 1);
+        uint32_t btn_temp;
+        flipper_format_read_uint32(flipper_format, "Btn", &btn_temp, 1);
+        instance->generic.btn = (uint8_t)btn_temp;
+        flipper_format_read_uint32(flipper_format, "Cnt", &instance->generic.cnt, 1);
+        uint32_t version_temp;
+        flipper_format_read_uint32(flipper_format, "Version", &version_temp, 1);
+        instance->version = (uint8_t)version_temp;
+    }
+    return res;
+}
+
+void kia_protocol_encoder_v3_v4_stop(void* context) {
+    SubGhzProtocolEncoderKiaV3V4* instance = context;
+    instance->is_running = false;
+}
+
+LevelDuration kia_protocol_encoder_v3_v4_yield(void* context) {
+    SubGhzProtocolEncoderKiaV3V4* instance = context;
+
+    if(!instance->is_running) {
+        instance->is_running = true;
+        instance->preamble_count = 0;
+        instance->data_bit_index = 0;
+        instance->send_low = false;
+
+        // Reconstruct and encrypt
+        uint32_t decrypted = (instance->generic.btn << 28) |
+                             ((instance->generic.serial & 0xFF) << 16) |
+                             (instance->generic.cnt & 0xFFFF);
+        uint32_t encrypted = keeloq_common_encrypt(decrypted, kia_mf_key);
+
+        uint8_t serial_bytes[4];
+        serial_bytes[0] = (instance->generic.serial >> 24) & 0xFF;
+        serial_bytes[1] = (instance->generic.serial >> 16) & 0xFF;
+        serial_bytes[2] = (instance->generic.serial >> 8) & 0xFF;
+        serial_bytes[3] = instance->generic.serial & 0xFF;
+
+        uint8_t b[8];
+        b[0] = reverse8((encrypted >> 0) & 0xFF);
+        b[1] = reverse8((encrypted >> 8) & 0xFF);
+        b[2] = reverse8((encrypted >> 16) & 0xFF);
+        b[3] = reverse8((encrypted >> 24) & 0xFF);
+        b[4] = reverse8(serial_bytes[3]);
+        b[5] = reverse8(serial_bytes[2]);
+        b[6] = reverse8(serial_bytes[1]);
+        b[7] = reverse8((serial_bytes[0] & 0x0F) | (instance->generic.btn << 4));
+
+        instance->generic.data = ((uint64_t)b[7] << 56) | ((uint64_t)b[6] << 48) |
+                                 ((uint64_t)b[5] << 40) | ((uint64_t)b[4] << 32) |
+                                 ((uint64_t)b[3] << 24) | ((uint64_t)b[2] << 16) |
+                                 ((uint64_t)b[1] << 8) | (uint64_t)b[0];
+    }
+
+    // Preamble
+    if(instance->preamble_count < 16) {
+        instance->preamble_count++;
+        if(instance->preamble_count % 2 != 0) {
+            return level_duration_make(true, kia_protocol_v3_v4_const.te_short);
+        } else {
+            return level_duration_make(false, kia_protocol_v3_v4_const.te_short);
+        }
+    }
+
+    // Sync
+    if(instance->preamble_count == 16) {
+        instance->preamble_count++;
+        if(instance->version == 1) { // V3
+            return level_duration_make(false, KIA_V3_V4_SYNC_DURATION);
+        } else { // V4
+            return level_duration_make(true, KIA_V3_V4_SYNC_DURATION);
+        }
+    }
+
+    // Data
+    if(instance->data_bit_index < 64) {
+        if(instance->send_low) {
+            instance->send_low = false;
+            return level_duration_make(false, kia_protocol_v3_v4_const.te_short);
+        }
+
+        uint64_t bit_mask = 1ULL << (63 - instance->data_bit_index);
+        bool bit = (instance->generic.data & bit_mask) ? 1 : 0;
+        instance->data_bit_index++;
+        instance->send_low = true;
+
+        if(bit) {
+            return level_duration_make(true, kia_protocol_v3_v4_const.te_long);
+        } else {
+            return level_duration_make(true, kia_protocol_v3_v4_const.te_short);
+        }
+    }
+
+    kia_protocol_encoder_v3_v4_stop(context);
+    return level_duration_reset();
 }
