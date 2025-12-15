@@ -91,7 +91,7 @@ static inline bool kia_v1_get_raw_bit(SubGhzProtocolDecoderKiaV1 *instance, uint
 
 static bool kia_v1_manchester_decode(SubGhzProtocolDecoderKiaV1 *instance)
 {
-    if (instance->raw_bit_count < 113)
+    if (instance->raw_bit_count < 112)
     {
         FURI_LOG_D(TAG, "Not enough raw bits: %u", instance->raw_bit_count);
         return false;
