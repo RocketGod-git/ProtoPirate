@@ -27,12 +27,18 @@ static const char* preset_name_to_short(const char* preset_name) {
     if(strstr(preset_name, "Ook650") || strstr(preset_name, "OOK650")) return "AM650";
     if(strstr(preset_name, "Ook270") || strstr(preset_name, "OOK270")) return "AM270";
     if(strstr(preset_name, "2FSKDev238") || strstr(preset_name, "Dev238")) return "FM238";
+#if defined(FW_ORIGIN_Unleashed) || defined(FW_ORIGIN_RM)
+    if(strstr(preset_name, "2FSKDev12K") || strstr(preset_name, "Dev12K")) return "FM12K";
+#endif
     if(strstr(preset_name, "2FSKDev476") || strstr(preset_name, "Dev476")) return "FM476";
     
     // Check for short names already
     if(strcmp(preset_name, "AM650") == 0) return "AM650";
     if(strcmp(preset_name, "AM270") == 0) return "AM270";
     if(strcmp(preset_name, "FM238") == 0) return "FM238";
+#if defined(FW_ORIGIN_Unleashed) || defined(FW_ORIGIN_RM)
+    if(strcmp(preset_name, "FM12K") == 0) return "FM12K";
+#endif
     if(strcmp(preset_name, "FM476") == 0) return "FM476";
     
     // Default fallback
