@@ -32,6 +32,12 @@ bool protopirate_set_preset(ProtoPirateApp *app, const char *preset)
     {
         furi_string_set(app->txrx->preset->name, "FM238");
     }
+#if defined(FW_ORIGIN_Unleashed) || defined(FW_ORIGIN_RM)
+    else if (!strcmp(preset, "FuriHalSubGhzPreset2FSKDev12KAsync"))
+    {
+        furi_string_set(app->txrx->preset->name, "FM12K");
+    }
+#endif
     else if (!strcmp(preset, "FuriHalSubGhzPreset2FSKDev476Async"))
     {
         furi_string_set(app->txrx->preset->name, "FM476");

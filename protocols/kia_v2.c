@@ -502,6 +502,10 @@ static const char* kia_v2_get_short_preset_name(const char* preset_name) {
         return "AM650";
     } else if(!strcmp(preset_name, "FuriHalSubGhzPreset2FSKDev238Async")) {
         return "FM238";
+#if defined(FW_ORIGIN_Unleashed) || defined(FW_ORIGIN_RM)
+    } else if(!strcmp(preset_name, "FuriHalSubGhzPreset2FSKDev12KAsync")) {
+        return "FM12K";
+#endif
     } else if(!strcmp(preset_name, "FuriHalSubGhzPreset2FSKDev476Async")) {
         return "FM476";
     } else if(!strcmp(preset_name, "FuriHalSubGhzPresetCustom")) {
