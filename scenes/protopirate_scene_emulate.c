@@ -19,6 +19,26 @@ typedef struct
 
 static EmulateContext *emulate_context = NULL;
 
+// Convert full FuriHal preset name to short name used by settings
+static const char* preset_name_to_short(const char* preset_name) {
+    if(!preset_name) return "AM650";
+    
+    // Check for full FuriHal names
+    if(strstr(preset_name, "Ook650") || strstr(preset_name, "OOK650")) return "AM650";
+    if(strstr(preset_name, "Ook270") || strstr(preset_name, "OOK270")) return "AM270";
+    if(strstr(preset_name, "2FSKDev238") || strstr(preset_name, "Dev238")) return "FM238";
+    if(strstr(preset_name, "2FSKDev476") || strstr(preset_name, "Dev476")) return "FM476";
+    
+    // Check for short names already
+    if(strcmp(preset_name, "AM650") == 0) return "AM650";
+    if(strcmp(preset_name, "AM270") == 0) return "AM270";
+    if(strcmp(preset_name, "FM238") == 0) return "FM238";
+    if(strcmp(preset_name, "FM476") == 0) return "FM476";
+    
+    // Default fallback
+    return "AM650";
+}
+
 static void emulate_context_free(void) {
     if(emulate_context == NULL) return;
     
@@ -272,7 +292,7 @@ static bool protopirate_emulate_input_callback(InputEvent *event, void *context)
     }
     else if(event->type == InputTypeRelease)
     {
-        // Stop transmission immediately on release - simple behavior like main SubGhz app
+        // Stop transmission immediately on release
         if(ctx && ctx->is_transmitting)
         {
             ctx->is_transmitting = false;
@@ -331,8 +351,6 @@ void protopirate_scene_emulate_on_enter(void *context)
         }
 
         emulate_context->flipper_format = ff;
-        // Note: We keep storage record open while flipper_format is in use
-        // It will be closed when we free flipper_format and close storage in on_exit
 
         // Read protocol name
         flipper_format_rewind(ff);
@@ -475,26 +493,33 @@ bool protopirate_scene_emulate_on_event(void *context, SceneManagerEvent event)
                 
                 flipper_format_rewind(emulate_context->flipper_format);
                 if(!flipper_format_read_uint32(emulate_context->flipper_format, "Frequency", &frequency, 1)) {
-                    FURI_LOG_W(TAG, "Failed to read frequency, using default");
+                    FURI_LOG_W(TAG, "Failed to read frequency, using default 433.92MHz");
                 }
                 
                 flipper_format_rewind(emulate_context->flipper_format);
                 if(!flipper_format_read_string(emulate_context->flipper_format, "Preset", preset_str)) {
-                    FURI_LOG_W(TAG, "Failed to read preset, using FM476");
-                    furi_string_set(preset_str, "FM476");
+                    FURI_LOG_W(TAG, "Failed to read preset, using AM650");
+                    furi_string_set(preset_str, "AM650");
                 }
                 
-                const char* preset_name = furi_string_get_cstr(preset_str);
-                FURI_LOG_I(TAG, "Using frequency %lu Hz, preset %s", (unsigned long)frequency, preset_name);
+                // Convert full preset name to short name
+                const char* preset_name_raw = furi_string_get_cstr(preset_str);
+                const char* preset_name = preset_name_to_short(preset_name_raw);
+                FURI_LOG_I(TAG, "Using frequency %lu Hz, preset %s (from %s)", 
+                           (unsigned long)frequency, preset_name, preset_name_raw);
                 
-                // Get preset data
+                // Get preset data with fallback chain
                 uint8_t* preset_data = subghz_setting_get_preset_data_by_name(app->setting, preset_name);
                 
                 if(!preset_data) {
-                    preset_data = subghz_setting_get_preset_data_by_name(app->setting, "FM476");
+                    FURI_LOG_W(TAG, "Preset %s not found, trying AM650", preset_name);
+                    preset_data = subghz_setting_get_preset_data_by_name(app->setting, "AM650");
+                    preset_name = "AM650";
                 }
                 if(!preset_data) {
-                    preset_data = subghz_setting_get_preset_data_by_name(app->setting, "AM650");
+                    FURI_LOG_W(TAG, "AM650 not found, trying FM476");
+                    preset_data = subghz_setting_get_preset_data_by_name(app->setting, "FM476");
+                    preset_name = "FM476";
                 }
                 
                 if(preset_data) {
@@ -514,14 +539,15 @@ bool protopirate_scene_emulate_on_event(void *context, SceneManagerEvent event)
                     {
                         app->txrx->txrx_state = ProtoPirateTxRxStateTx;
                         notification_message(app->notifications, &sequence_single_vibro);
-                        FURI_LOG_I(TAG, "Started transmission: freq=%lu, preset=%s", (unsigned long)frequency, preset_name);
+                        FURI_LOG_I(TAG, "Started transmission: freq=%lu, preset=%s", 
+                                   (unsigned long)frequency, preset_name);
                     } else {
                         FURI_LOG_E(TAG, "Failed to start async TX");
                         subghz_devices_idle(app->txrx->radio_device);
                         notification_message(app->notifications, &sequence_error);
                     }
                 } else {
-                    FURI_LOG_E(TAG, "No preset data available");
+                    FURI_LOG_E(TAG, "No preset data available - cannot transmit");
                     notification_message(app->notifications, &sequence_error);
                 }
                 
