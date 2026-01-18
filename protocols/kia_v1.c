@@ -108,7 +108,7 @@ static void kia_v1_check_remote_controller(SubGhzProtocolDecoderKiaV1* instance)
         crc = kia_v1_crc4(char_data, 6, offset);
     } else if(cnt_high >= 0x6) {
         char_data[6] = cnt_high;
-        crc = kia_v1_crc4(char_data, 7, 1);
+        crc = kia_v1_crc4(char_data, 7, 15);
     } else {
         crc = kia_v1_crc4(char_data, 6, 1);
     }
@@ -176,7 +176,7 @@ static void kia_protocol_encoder_v1_get_upload(SubGhzProtocolEncoderKiaV1* insta
         crc = kia_v1_crc4(char_data, 6, offset);
     } else if(cnt_high >= 0x6) {
         char_data[6] = cnt_high;
-        crc = kia_v1_crc4(char_data, 7, 1);
+        crc = kia_v1_crc4(char_data, 7, 15);
     } else {
         crc = kia_v1_crc4(char_data, 6, 1);
     }
