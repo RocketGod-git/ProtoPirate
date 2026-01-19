@@ -14,7 +14,7 @@
 #define VW_PROTOCOL_NAME "VW"
 
 extern const SubGhzProtocol vw_protocol;
-
+//decoder
 void* subghz_protocol_decoder_vw_alloc(SubGhzEnvironment* environment);
 void subghz_protocol_decoder_vw_free(void* context);
 void subghz_protocol_decoder_vw_reset(void* context);
@@ -27,3 +27,12 @@ SubGhzProtocolStatus subghz_protocol_decoder_vw_serialize(
 SubGhzProtocolStatus
     subghz_protocol_decoder_vw_deserialize(void* context, FlipperFormat* flipper_format);
 void subghz_protocol_decoder_vw_get_string(void* context, FuriString* output);
+
+// encoder
+void* subghz_protocol_encoder_vw_alloc(SubGhzEnvironment* environment);
+void subghz_protocol_encoder_vw_free(void* context);
+void subghz_protocol_encoder_vw_stop(void* context);
+SubGhzProtocolStatus subghz_protocol_encoder_vw_deserialize(
+    void* context,
+    FlipperFormat* flipper_format);
+LevelDuration subghz_protocol_encoder_vw_yield(void* context);
