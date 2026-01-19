@@ -136,7 +136,18 @@ const SubGhzProtocol ford_protocol_v0 = {
 // =============================================================================
 
 static uint8_t ford_v0_calculate_bs(uint32_t count, uint8_t button) {
-    return ((count & 0xFF) + 0x6F + (button << 4)) & 0xFF;
+    uint16_t result;
+
+    //Do the BS calculation
+    result = ((uint16_t) count & 0xFF)  + 0x75 + (button << 4);
+    
+    //Handle the OVerflow
+    if(result & 0xFF00) {
+        result -= 128;
+    }
+
+    //Return the last byte of result
+    return (uint8_t) (result & 0xFF);         
 }
 
 // =============================================================================
