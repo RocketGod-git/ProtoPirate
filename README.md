@@ -7,22 +7,22 @@ The app currently supports decoding for multiple automotive key-fob families (Ki
 
 ## **Supported Protocols**
 
-| Protocol            | Decoder | Encoder |
-|---------------------|:-------:|:-------:|
-| Fiat V0             | ✅      | ✅      |
-| Ford V0             | ✅      | ✅      |
-| KIA V0              | ✅      | ✅      |
-| KIA V1              | ✅      | ✅      |
-| KIA V2              | ✅      | ✅      |
-| KIA V3 / V4         | ✅      | ✅      |
-| KIA V5              | ✅      |         |
-| KIA V6              | ✅      |         |
-| PSA                 | (WIP)   |         |
-| Scher-Khan          | ✅      |         |
-| StarLine            | ✅      | ✅      |
-| Subaru              | ✅      | ✅      |
-| Suzuki              | ✅      | ✅      |
-| Volkswagen (VW)     | ✅      | (WIP)   |
+| Protocol            | Decoder | Encoder | CRC |
+|---------------------|:-------:|:-------:|:---:|
+| Fiat V0             | ✅      | ✅      |     |
+| Ford V0             | ✅      | ✅      | ✅  |
+| KIA V0              | ✅      | ✅      | ✅  |
+| KIA V1              | ✅      | ✅      | ✅  |
+| KIA V2              | ✅      | ✅      |     |
+| KIA V3 / V4         | ✅      | ✅      | ✅  |
+| KIA V5              | ✅      |         |     |
+| KIA V6              | ✅      |         |     |
+| PSA                 | Partial |         |     |
+| Scher-Khan          | ✅      |         |     |
+| StarLine            | ✅      | ✅      |     |
+| Subaru              | ✅      | ✅      |     |
+| Suzuki              | ✅      | ✅      | ✅  |
+| Volkswagen (VW)     | ✅      | Partial |     |
 
 More Coming Soon...
 
