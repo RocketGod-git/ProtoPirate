@@ -16,7 +16,7 @@ The app currently supports decoding for multiple automotive key-fob families (Ki
 | KIA V2              | ✅      | ✅      |     |
 | KIA V3 / V4         | ✅      | ✅      | ✅  |
 | KIA V5              | ✅      |         |     |
-| KIA V6              | ✅      |         |     |
+| KIA V6              | ✅      |         | ✅  |
 | PSA                 | Partial |         |     |
 | Scher-Khan          | ✅      |         |     |
 | StarLine            | ✅      | ✅      |     |
