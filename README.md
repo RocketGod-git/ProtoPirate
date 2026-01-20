@@ -9,7 +9,7 @@ The app currently supports decoding for multiple automotive key-fob families (Ki
 
 | Protocol            | Decoder | Encoder | CRC |
 |---------------------|:-------:|:-------:|:---:|
-| Fiat V0             | ✅      | ✅      |     |
+| Fiat V0             | Partial | Partial |     |
 | Ford V0             | ✅      | ✅      | ✅  |
 | KIA V0              | ✅      | ✅      | ✅  |
 | KIA V1              | ✅      | ✅      | ✅  |
@@ -22,7 +22,7 @@ The app currently supports decoding for multiple automotive key-fob families (Ki
 | StarLine            | ✅      | ✅      |     |
 | Subaru              | ✅      | ✅      |     |
 | Suzuki              | ✅      | ✅      | ✅  |
-| Volkswagen (VW)     | ✅      | Partial |     |
+| Volkswagen (VW)     | Partial | Partial |     |
 
 More Coming Soon...
 
