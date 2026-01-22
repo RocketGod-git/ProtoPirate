@@ -449,11 +449,13 @@ bool protopirate_scene_emulate_on_event(void* context, SceneManagerEvent event) 
                emulate_context->flipper_format) {
                 // Stop any ongoing transmission FIRST
                 if(app->txrx->txrx_state == ProtoPirateTxRxStateTx) {
-                    FURI_LOG_W(TAG, "Previous transmission still active, stopping it");
-                    subghz_devices_stop_async_tx(app->txrx->radio_device);
-                    subghz_transmitter_stop(emulate_context->transmitter);
-                    furi_delay_ms(10);
-                    subghz_devices_idle(app->txrx->radio_device);
+                    if(ALLOW_TX == 0xC0FFEE) {
+                        FURI_LOG_W(TAG, "Previous transmission still active, stopping it");
+                        subghz_devices_stop_async_tx(app->txrx->radio_device);
+                        subghz_transmitter_stop(emulate_context->transmitter);
+                        furi_delay_ms(10);
+                        subghz_devices_idle(app->txrx->radio_device);
+                    }
                     app->txrx->txrx_state = ProtoPirateTxRxStateIDLE;
                 }
 
@@ -520,12 +522,12 @@ bool protopirate_scene_emulate_on_event(void* context, SceneManagerEvent event) 
                     subghz_devices_set_frequency(app->txrx->radio_device, frequency);
 
                     // Start transmission
-                    subghz_devices_set_tx(app->txrx->radio_device);
+                    if(ALLOW_TX == 0xC0FFEE) subghz_devices_set_tx(app->txrx->radio_device);
 
-                    if(subghz_devices_start_async_tx(
-                           app->txrx->radio_device,
-                           subghz_transmitter_yield,
-                           emulate_context->transmitter)) {
+                    if((ALLOW_TX == 0xC0FFEE) && subghz_devices_start_async_tx(
+                                                     app->txrx->radio_device,
+                                                     subghz_transmitter_yield,
+                                                     emulate_context->transmitter)) {
                         app->txrx->txrx_state = ProtoPirateTxRxStateTx;
                         notification_message(app->notifications, &sequence_single_vibro);
                         FURI_LOG_I(
@@ -557,17 +559,19 @@ bool protopirate_scene_emulate_on_event(void* context, SceneManagerEvent event) 
             if(app->txrx->txrx_state == ProtoPirateTxRxStateTx) {
                 FURI_LOG_I(TAG, "Stopping transmission");
 
-                // Stop async TX first
-                subghz_devices_stop_async_tx(app->txrx->radio_device);
+                if(ALLOW_TX == 0xC0FFEE) {
+                    // Stop async TX first
+                    subghz_devices_stop_async_tx(app->txrx->radio_device);
 
-                // Stop the encoder
-                if(emulate_context && emulate_context->transmitter) {
-                    subghz_transmitter_stop(emulate_context->transmitter);
+                    // Stop the encoder
+                    if(emulate_context && emulate_context->transmitter) {
+                        subghz_transmitter_stop(emulate_context->transmitter);
+                    }
+
+                    furi_delay_ms(10);
+
+                    subghz_devices_idle(app->txrx->radio_device);
                 }
-
-                furi_delay_ms(10);
-
-                subghz_devices_idle(app->txrx->radio_device);
                 app->txrx->txrx_state = ProtoPirateTxRxStateIDLE;
 
                 FURI_LOG_I(TAG, "Transmission stopped, state set to IDLE");
@@ -602,7 +606,7 @@ void protopirate_scene_emulate_on_exit(void* context) {
     ProtoPirateApp* app = context;
 
     // Stop any active transmission
-    if(app->txrx->txrx_state == ProtoPirateTxRxStateTx) {
+    if((ALLOW_TX == 0xC0FFEE) && (app->txrx->txrx_state == ProtoPirateTxRxStateTx)) {
         FURI_LOG_I(TAG, "Stopping transmission on exit");
 
         subghz_devices_stop_async_tx(app->txrx->radio_device);
