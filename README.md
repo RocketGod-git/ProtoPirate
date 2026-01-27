@@ -1,5 +1,15 @@
 # **ProtoPirate**
 
+Uncommented line 29 in protopirate_app_i.h - #define ENABLE_EMULATE_FEATURE is now active
+
+Updated application.fam - Added "subghz" to the requirements array to enable TX functionality
+
+below TX:
+
+requires=["gui","subghz"],
+
+stack_size=2 * 1024, >>> changed to 8
+
 ### _for Flipper Zero_
 
 ProtoPirate is an experimental rolling-code analysis toolkit developed by members of **The Pirates' Plunder**.
