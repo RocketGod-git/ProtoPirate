@@ -1,6 +1,7 @@
 // scenes/protopirate_scene_saved_info.c
 #include "../protopirate_app_i.h"
 #include "../helpers/protopirate_storage.h"
+#include "proto_pirate_icons.h"
 
 #define TAG "ProtoPirateSceneSavedInfo"
 
@@ -252,7 +253,7 @@ bool protopirate_scene_saved_info_on_event(void* context, SceneManagerEvent even
                 //Show the "Are you Sure" dialog.
                 app->dialogs = furi_record_open(RECORD_DIALOGS);
                 DialogMessage* message = dialog_message_alloc();
-                dialog_message_set_buttons(message, "DElete", NULL, "Keep");
+                dialog_message_set_buttons(message, "Delete", NULL, "Keep");
                 dialog_message_set_icon(message, &I_WarningDolphin_45x42, 0, 12);
                 dialog_message_set_header(
                     message, "Confirm Delete Action", 64, 0, AlignCenter, AlignTop);

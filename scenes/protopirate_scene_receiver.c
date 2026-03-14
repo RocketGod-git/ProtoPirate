@@ -3,6 +3,7 @@
 #include "../helpers/protopirate_storage.h"
 #include "views/protopirate_receiver.h"
 #include <notification/notification_messages.h>
+#include "proto_pirate_icons.h"
 
 #define TAG                             "ProtoPirateSceneRx"
 #define PROTOPIRATE_DISPLAY_HISTORY_MAX 20 // Reduced from 50 to save memory
