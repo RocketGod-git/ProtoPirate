@@ -3,9 +3,9 @@
 //#define ENABLE_TIMING_TUNER_SCENE
 //#define ENABLE_SUB_DECODE_SCENE
 
-// #define ENABLE_EMULATE_FEATURE
+#define ENABLE_EMULATE_FEATURE
 
-#define REMOVE_LOGS
+//#define REMOVE_LOGS
 
 #ifdef REMOVE_LOGS
 // Undefine existing macros

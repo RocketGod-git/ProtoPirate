@@ -85,6 +85,7 @@ struct ProtoPirateApp {
     uint16_t save_history_idx;
     bool save_from_saved_info;
     bool emulate_disabled_for_loaded;
+    bool emulate_feature_enabled;
 };
 
 #ifdef ENABLE_EMULATE_FEATURE

@@ -187,7 +187,7 @@ static void protopirate_receiver_info_build_normal_widget(ProtoPirateApp* app) {
             app);
     }
 #ifdef ENABLE_EMULATE_FEATURE
-    else if(!app->emulate_disabled_for_loaded) {
+    else if(app->emulate_feature_enabled && !app->emulate_disabled_for_loaded) {
         widget_add_button_element(
             app->widget,
             GuiButtonTypeLeft,
@@ -246,7 +246,7 @@ static void protopirate_scene_receiver_info_widget_callback(
                     app->view_dispatcher, ProtoPirateCustomEventReceiverInfoBruteforceStart);
             }
 #ifdef ENABLE_EMULATE_FEATURE
-            else if(!app->emulate_disabled_for_loaded) {
+            else if(app->emulate_feature_enabled && !app->emulate_disabled_for_loaded) {
                 view_dispatcher_send_custom_event(
                     app->view_dispatcher, ProtoPirateCustomEventReceiverInfoEmulate);
             }
@@ -530,7 +530,7 @@ bool protopirate_scene_receiver_info_on_event(void* context, SceneManagerEvent e
 
 #ifdef ENABLE_EMULATE_FEATURE
         if(event.event == ProtoPirateCustomEventReceiverInfoEmulate &&
-           !app->emulate_disabled_for_loaded) {
+           app->emulate_feature_enabled && !app->emulate_disabled_for_loaded) {
             FuriString* hist_path = furi_string_alloc();
             if(protopirate_history_get_capture_path(
                    app->txrx->history, app->txrx->idx_menu_chosen, hist_path)) {
