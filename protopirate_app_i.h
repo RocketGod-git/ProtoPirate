@@ -30,8 +30,8 @@
 #include "protocols/protocols_common.h"
 #include "protocols/protocol_items.h"
 #include "protocols/protopirate_protocol_plugins.h"
-#define
-ENABLE_EMULATE_FEATURE
+#define  ENABLE_EMULATE_FEATURE
+
 #include "scenes/plugins/protopirate_emulate_plugin.h"
 #endif
 #include "scenes/plugins/protopirate_psa_bf_plugin.h"
