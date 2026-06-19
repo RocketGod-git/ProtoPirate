@@ -1,7 +1,7 @@
 App(
     appid="proto_pirate",
     name="ProtoPirate",
-    apptype=FlipperAppType.EXTERNAL,
+    apptype=FlipperAppType.momentum,
     targets=["f7"],
     entry_point="protopirate_app",
     requires=["gui"],
