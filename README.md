@@ -20,20 +20,49 @@ App is intended for educational and security purposes only, and has no signal tr
 
 ## **Supported Protocols**
 
-| Protocol                      | Decoder | Encoder |
-|:------------------------------|:--------|:--------|
-| Fiat V0                       | ✅ | ✅ |
-| Ford V0                       | ✅ | ✅ |
-| Kia V0 / V1 / V2 / V3 / V4    | ✅ | ✅ |
-| Kia V5 / V6                   | ✅ | ❌ |
-| Scher-Khan                    | ✅ | ❌ |
-| StarLine                      | ✅ | ✅ |
-| Subaru                        | ✅ | ✅ |
-| Suzuki                        | ✅ | ✅ |
-| PSA                           | ✅ | ✅ |
-| VAG (VW)                      | ✅ | ✅ |
+Protocols are split into **AM** and **FM** registries. The active registry is chosen from the receiver selected preset.
 
-_More Coming Soon_
+### **AM protocols**
+
+
+| Protocol                 | Decoder | Encoder | Signal Encoding | Modulation | Encryption                     | CRC          | Frequency       |
+| ------------------------ | ------- | ------- | --------------- | ---------- | ------------------------------ | ------------ | --------------- |
+| Chrysler V0              | ✅       | ✅       | PWM             | AM650      | Rolling Code                   | Checksum     | 315.00 / 433.92 |
+| Fiat V0                  | ✅       | ✅       | Manchester      | AM650      | Rolling Code (static emu only) | ❌            | 315.00 / 433.92 |
+| Fiat V1                  | ✅       | ❌       | Manchester      | AM650      | Rolling Code                   | CRC8         | 315.00 / 433.92 |
+| Ford V0                  | ✅       | ✅       | Manchester      | AM650      | Rolling Code                   | ✅ + Checksum | 315.00 / 433.92 |
+| Honda V1                 | ✅       | ✅       | Manchester      | AM650      | Rolling Code                   | CRC4         | 315.00 / 433.92 |
+| Kia V1                   | ✅       | ✅       | Manchester      | AM650      | Rolling Code                   | CRC4         | 315.00 / 433.92 |
+| Porsche Touareg          | ✅       | ❌       | PWM             | AM650      | Rolling Code                   | ❌            | 315.00 / 433.92 |
+| PSA (Peugeot/Citroen)    | ✅       | ✅       | Manchester      | AM650      | XTEA/XOR                       | CRC8         | 315.00 / 433.92 |
+| StarLine                 | ✅       | ✅       | PWM             | AM650      | KeeLoq                         | ❌            | 315.00 / 433.92 |
+| Subaru                   | ✅       | ✅       | PPM             | AM650      | Rolling Code                   | ❌            | 315.00 / 433.92 |
+| VAG (VW/Audi/Seat/Skoda) | ✅       | ✅       | Manchester      | AM650      | AUT64/XTEA                     | ❌            | 434.42          |
+
+
+### **FM protocols**
+
+
+| Protocol                      | Decoder | Encoder | Signal Encoding | Modulation | Encryption                   | CRC        | Frequency       |
+| ----------------------------- | ------- | ------- | --------------- | ---------- | ---------------------------- | ---------- | --------------- |
+| Ford V1                       | ✅       | ✅       | Manchester      | F4         | Rolling Code                 | CRC16      | 315.00 / 433.92 |
+| Ford V2                       | ✅       | ✅       | Manchester      | F4         | Rolling Code (simple replay) | ❌          | 434.25          |
+| Ford V3                       | ✅       | ❌       | Manchester      | F4         | Rolling Code                 | ❌          | 434.25          |
+| Honda Static                  | ✅       | ✅       | PWM             | Honda1     | Static Code                  | Checksum   | 315.00 / 433.92 |
+| Kia V0 / Suzuki V0 / Honda V0 | ✅       | ✅       | PWM             | FM476      | Rolling Code                 | CRC8       | 315.00 / 433.92 |
+| Kia V2                        | ✅       | ✅       | Manchester      | FM476      | Rolling Code                 | CRC4       | 315.00 / 433.92 |
+| Kia V3 / V4                   | ✅       | ✅       | PWM             | FM476      | KeeLoq                       | CRC4 (BF)  | 315.00 / 433.92 |
+| Kia V5                        | ✅       | ✅       | PWM             | FM476      | Rolling Code                 | ✅          | 315.00 / 433.92 |
+| Kia V6                        | ✅       | ✅       | Manchester      | FM476      | AES128                       | CRC8       | 315.00 / 433.92 |
+| Kia V7                        | ✅       | ✅       | Manchester      | FM476      | Rolling Code                 | CRC8       | 315.00 / 433.92 |
+| Land Rover V0                 | ✅       | ✅       | PWM             | F4         | Rolling Code                 | Check+Tail | 315.00 / 433.92 |
+| Mazda V0                      | ✅       | ✅       | Manchester      | FM (F2?)   | Rolling Code                 | Checksum   | 315.00 / 433.92 |
+| Mitsubishi V0                 | ✅       | ❌       | PWM             | FM476      | Rolling Code                 | ❌          | 315.00 / 433.92 |
+| PSA (Peugeot/Citroen)         | ✅       | ✅       | Manchester      | FM (F3?)   | XTEA/XOR                     | CRC8       | 315.00 / 433.92 |
+| Scher-Khan                    | ✅       | ❌       | PWM             | FM         | Magic Code                   | ❌          | 315.00 / 433.92 |
+
+
+*More Coming Soon*
 
 ## **Features**
 
@@ -80,6 +109,7 @@ The following contributors are recognized for helping us keep open sourced proje
 - Wootini
 - Li0ard
 - Leeroy
+- Ash
 
 ### **Reverse Engineering Support**
 
