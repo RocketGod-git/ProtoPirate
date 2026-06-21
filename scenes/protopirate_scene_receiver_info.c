@@ -37,10 +37,18 @@ static void protopirate_receiver_info_build_normal_widget(ProtoPirateApp* app) {
         flipper_format_rewind(ff);
         if(flipper_format_read_string(ff, FF_PROTOCOL, protocol)) {
             if(furi_string_cmp_str(protocol, "PSA") == 0) is_psa = true;
-            app->emulate_disabled_for_loaded = (furi_string_cmp_str(protocol, "Scher-Khan") == 0);
+            app->emulate_disabled_for_loaded = false;
         }
         furi_string_free(protocol);
     }
+        
+    
+        
+            
+        
+        
+        
+    
 
     const char* text_str = furi_string_get_cstr(text);
     const char* first_newline = strchr(text_str, '\r');
