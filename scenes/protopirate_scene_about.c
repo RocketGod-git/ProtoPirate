@@ -272,4 +272,5 @@ void protopirate_scene_about_on_exit(void* context) {
 
     view_set_draw_callback(app->view_about, NULL);
     view_set_input_callback(app->view_about, NULL);
+    view_set_context(app->view_about, NULL);
 }
