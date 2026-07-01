@@ -7,7 +7,9 @@
 #include <string.h>
 
 #define TAG "ProtoPirateProtocolPlugin"
+#ifdef ENABLE_EMULATE_FEATURE
 #define PROTOPIRATE_TX_PLUGIN_PATH_MAX 160U
+#endif
 
 static const char* protopirate_get_registry_plugin_path(ProtoPirateProtocolRegistryRoute route) {
     switch(route) {
@@ -25,6 +27,7 @@ static const char* protopirate_get_registry_plugin_path(ProtoPirateProtocolRegis
     }
 }
 
+#ifdef ENABLE_EMULATE_FEATURE
 static bool protopirate_build_tx_protocol_plugin_path(
     const char* tx_key,
     char* plugin_path,
@@ -40,6 +43,7 @@ static bool protopirate_build_tx_protocol_plugin_path(
         tx_key);
     return (written > 0) && ((size_t)written < plugin_path_size);
 }
+#endif
 
 static const SubGhzProtocolRegistry protopirate_empty_protocol_registry = {
     .items = NULL,
@@ -165,6 +169,7 @@ static bool protopirate_ensure_protocol_registry_plugin(
     return true;
 }
 
+#ifdef ENABLE_EMULATE_FEATURE
 static bool protopirate_ensure_tx_protocol_plugin(
     ProtoPirateApp* app,
     const char* protocol_name,
@@ -264,6 +269,7 @@ static bool protopirate_ensure_tx_protocol_plugin(
     *registry = plugin->registry;
     return true;
 }
+#endif
 
 bool protopirate_refresh_protocol_registry(ProtoPirateApp* app, bool ensure_receiver_ready) {
     furi_check(app);
@@ -378,6 +384,7 @@ bool protopirate_apply_protocol_registry_for_context(
     }
 
     if(protocol_name && protocol_name[0] != '\0') {
+#ifdef ENABLE_EMULATE_FEATURE
         const char* registry_name = protopirate_protocol_catalog_canonical_name(protocol_name);
         if(!registry_name || !protopirate_protocol_catalog_can_tx(protocol_name)) {
             FURI_LOG_E(TAG, "No TX protocol plugin for %s", protocol_name);
@@ -410,6 +417,9 @@ bool protopirate_apply_protocol_registry_for_context(
         subghz_environment_set_protocol_registry(app->txrx->environment, tx_registry);
         app->txrx->protocol_registry = tx_registry;
         return true;
+#else
+        return false;
+#endif
     }
 
     ProtoPirateProtocolRegistryRoute route = protopirate_get_protocol_registry_route(

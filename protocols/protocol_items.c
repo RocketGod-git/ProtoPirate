@@ -3,6 +3,8 @@
 #include <furi.h>
 #include <string.h>
 
+#include "../defines.h"
+
 #define TAG "ProtoPirateCatalog"
 
 #define PROTOPIRATE_CC1101_REG_MDMCFG2        0x12U
@@ -17,6 +19,12 @@
 
 #define PROTOPIRATE_COUNT_OF(array) (sizeof(array) / sizeof((array)[0]))
 
+#ifdef ENABLE_EMULATE_FEATURE
+#define PROTOPIRATE_TX_KEY(key) key
+#else
+#define PROTOPIRATE_TX_KEY(key) NULL
+#endif
+
 typedef enum {
     ProtoPirateProtocolCatalogModulationAM = 0,
     ProtoPirateProtocolCatalogModulationFM,
@@ -28,33 +36,33 @@ typedef struct {
 } ProtoPirateProtocolCatalogAlias;
 
 static const ProtoPirateProtocolCatalogEntry protopirate_protocol_catalog[] = {
-    {"Chrysler V0", ProtoPirateProtocolCatalogRouteAMDefault, "chrysler_v0"},
-    {"Fiat V0", ProtoPirateProtocolCatalogRouteAMDefault, "fiat_v0"},
-    {"Fiat V1", ProtoPirateProtocolCatalogRouteAMDefault, "fiat_v1"},
+    {"Chrysler V0", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("chrysler_v0")},
+    {"Fiat V0", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("fiat_v0")},
+    {"Fiat V1", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("fiat_v1")},
     {"Fiat V2", ProtoPirateProtocolCatalogRouteAMDefault, NULL},
-    {"Ford V0", ProtoPirateProtocolCatalogRouteAMDefault, "ford_v0"},
-    {"Ford V1", ProtoPirateProtocolCatalogRouteFMF4, "ford_v1"},
-    {"Ford V2", ProtoPirateProtocolCatalogRouteFMF4, "ford_v2"},
+    {"Ford V0", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("ford_v0")},
+    {"Ford V1", ProtoPirateProtocolCatalogRouteFMF4, PROTOPIRATE_TX_KEY("ford_v1")},
+    {"Ford V2", ProtoPirateProtocolCatalogRouteFMF4, PROTOPIRATE_TX_KEY("ford_v2")},
     {"Ford V3", ProtoPirateProtocolCatalogRouteFMF4, NULL},
-    {"Honda Static", ProtoPirateProtocolCatalogRouteFMHonda1, "honda_static"},
-    {"Honda V1", ProtoPirateProtocolCatalogRouteAMDefault, "honda_v1"},
-    {"Kia V0", ProtoPirateProtocolCatalogRouteFMDefault, "kia_v0"},
-    {"Kia V1", ProtoPirateProtocolCatalogRouteAMDefault, "kia_v1"},
-    {"Kia V2", ProtoPirateProtocolCatalogRouteAMDefault, "kia_v2"},
-    {"Kia V3/V4", ProtoPirateProtocolCatalogRouteFMDefault, "kia_v3_v4"},
-    {"Kia V5", ProtoPirateProtocolCatalogRouteFMDefault, "kia_v5"},
-    {"Kia V6", ProtoPirateProtocolCatalogRouteFMDefault, "kia_v6"},
-    {"Kia V7", ProtoPirateProtocolCatalogRouteFMDefault, "kia_v7"},
-    {"Honda V2", ProtoPirateProtocolCatalogRouteFMF4, "honda_v2"},
-    {"Mazda V0", ProtoPirateProtocolCatalogRouteByModulation, "mazda_v0"},
+    {"Honda Static", ProtoPirateProtocolCatalogRouteFMHonda1, PROTOPIRATE_TX_KEY("honda_static")},
+    {"Honda V1", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("honda_v1")},
+    {"Kia V0", ProtoPirateProtocolCatalogRouteFMDefault, PROTOPIRATE_TX_KEY("kia_v0")},
+    {"Kia V1", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("kia_v1")},
+    {"Kia V2", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("kia_v2")},
+    {"Kia V3/V4", ProtoPirateProtocolCatalogRouteFMDefault, PROTOPIRATE_TX_KEY("kia_v3_v4")},
+    {"Kia V5", ProtoPirateProtocolCatalogRouteFMDefault, PROTOPIRATE_TX_KEY("kia_v5")},
+    {"Kia V6", ProtoPirateProtocolCatalogRouteFMDefault, PROTOPIRATE_TX_KEY("kia_v6")},
+    {"Kia V7", ProtoPirateProtocolCatalogRouteFMDefault, PROTOPIRATE_TX_KEY("kia_v7")},
+    {"Honda V2", ProtoPirateProtocolCatalogRouteFMF4, PROTOPIRATE_TX_KEY("honda_v2")},
+    {"Mazda V0", ProtoPirateProtocolCatalogRouteByModulation, PROTOPIRATE_TX_KEY("mazda_v0")},
     {"Mitsubishi V0", ProtoPirateProtocolCatalogRouteFMDefault, NULL},
     {"Porsche Touareg", ProtoPirateProtocolCatalogRouteAMDefault, NULL},
-    {"PSA", ProtoPirateProtocolCatalogRouteByModulation, "psa"},
-    {"Renault V0", ProtoPirateProtocolCatalogRouteAMDefault, "renault_v0"},
+    {"PSA", ProtoPirateProtocolCatalogRouteByModulation, PROTOPIRATE_TX_KEY("psa")},
+    {"Renault V0", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("renault_v0")},
     {"Scher-Khan", ProtoPirateProtocolCatalogRouteFMDefault, NULL},
-    {"Star Line", ProtoPirateProtocolCatalogRouteAMDefault, "star_line"},
-    {"Subaru", ProtoPirateProtocolCatalogRouteAMDefault, "subaru"},
-    {"VAG", ProtoPirateProtocolCatalogRouteAMVag, "vag"},
+    {"Star Line", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("star_line")},
+    {"Subaru", ProtoPirateProtocolCatalogRouteAMDefault, PROTOPIRATE_TX_KEY("subaru")},
+    {"VAG", ProtoPirateProtocolCatalogRouteAMVag, PROTOPIRATE_TX_KEY("vag")},
 };
 
 static const ProtoPirateProtocolCatalogAlias protopirate_protocol_catalog_aliases[] = {

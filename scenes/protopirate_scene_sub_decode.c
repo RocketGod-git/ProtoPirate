@@ -1205,7 +1205,9 @@ bool protopirate_scene_sub_decode_on_event(void* context, SceneManagerEvent even
                     app);
 
                 ctx->signal_info_left_is_emulate = false;
+#ifdef ENABLE_EMULATE_FEATURE
                 bool left_button_used = false;
+#endif
                 app->emulate_disabled_for_loaded = true;
 
                 // Store reference to history item's flipper format for saving
@@ -1239,7 +1241,9 @@ bool protopirate_scene_sub_decode_on_event(void* context, SceneManagerEvent even
                                 "Brute force",
                                 protopirate_scene_sub_decode_widget_callback,
                                 app);
+#ifdef ENABLE_EMULATE_FEATURE
                             left_button_used = true;
+#endif
                         }
                     }
                 }

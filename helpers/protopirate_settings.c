@@ -103,12 +103,14 @@ void protopirate_settings_load(ProtoPirateSettings* settings) {
         }
         settings->hopping_enabled = (hopping_temp == 1);
 
+#ifdef ENABLE_EMULATE_FEATURE
         uint32_t emulate_temp = 0;
         if(!flipper_format_read_uint32(ff, "EmulateFeature", &emulate_temp, 1)) {
             FURI_LOG_I(TAG, "EmulateFeature key missing, defaulting to disabled");
             emulate_temp = 0;
         }
         settings->emulate_feature_enabled = (emulate_temp == 1);
+#endif
 
         uint32_t check_saved_temp = 0;
         if(!flipper_format_read_uint32(ff, "CheckSaved", &check_saved_temp, 1)) {
@@ -185,11 +187,13 @@ void protopirate_settings_save(ProtoPirateSettings* settings) {
             break;
         }
 
+#ifdef ENABLE_EMULATE_FEATURE
         uint32_t emulate_temp = settings->emulate_feature_enabled ? 1 : 0;
         if(!flipper_format_write_uint32(ff, "EmulateFeature", &emulate_temp, 1)) {
             FURI_LOG_E(TAG, "Failed to write emulate feature flag");
             break;
         }
+#endif
 
         uint32_t check_saved_temp = settings->check_saved ? 1 : 0;
         if(!flipper_format_write_uint32(ff, "CheckSaved", &check_saved_temp, 1)) {

@@ -90,7 +90,11 @@ ProtoPirateApp* protopirate_app_alloc() {
     app->auto_save = settings.auto_save;
     app->check_saved = settings.check_saved;
     app->tx_power = settings.tx_power;
+#ifdef ENABLE_EMULATE_FEATURE
     app->emulate_feature_enabled = settings.emulate_feature_enabled;
+#else
+    app->emulate_feature_enabled = false;
+#endif
 
     // Init setting - KEEP THIS, it's small
     app->setting = subghz_setting_alloc();
@@ -175,7 +179,11 @@ void protopirate_app_free(ProtoPirateApp* app) {
     settings.check_saved = app->check_saved;
     settings.tx_power = app->tx_power;
     settings.hopping_enabled = (app->txrx->hopper_state != ProtoPirateHopperStateOFF);
+#ifdef ENABLE_EMULATE_FEATURE
     settings.emulate_feature_enabled = app->emulate_feature_enabled;
+#else
+    settings.emulate_feature_enabled = false;
+#endif
 
     // Find current preset index
     settings.preset_index = 0;
@@ -273,14 +281,18 @@ int32_t protopirate_app(char* p) {
 
     //We now jump straight to emulate scene from Browser. If the user wanted the key to look at, just click back.
     if(load_saved) {
+#ifdef ENABLE_EMULATE_FEATURE
         if(protopirate_app->emulate_feature_enabled) {
             view_dispatcher_send_custom_event(
                 protopirate_app->view_dispatcher, ProtoPirateCustomEventSavedInfoEmulate);
             notification_message(protopirate_app->notifications, &sequence_success);
         } else {
+#endif
             view_dispatcher_send_custom_event(
                 protopirate_app->view_dispatcher, ProtoPirateCustomEventReceiverInfoSave);
+#ifdef ENABLE_EMULATE_FEATURE
         }
+#endif
     }
 
     view_dispatcher_run(protopirate_app->view_dispatcher);

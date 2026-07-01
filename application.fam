@@ -13,12 +13,15 @@ def ProtoPirateDefineEnabled(name, app_manifest_path=app_manifest_path):
 
 
 _ENABLE_TIMING_TUNER = ProtoPirateDefineEnabled("ENABLE_TIMING_TUNER_SCENE")
+_ENABLE_EMULATE = ProtoPirateDefineEnabled("ENABLE_EMULATE_FEATURE")
 
 _MAIN_APP_SOURCES = [
     "*.c*",
     "!protocols/plugins",
     "!scenes/plugins",
     "!protocols",
+    "!protopirate_emulate_plugin.c",
+    "!protopirate_psa_bf_plugin.c",
     "protocols/protocol_items.c",
     "protocols/protocols_common.c",
     "!raw_file_reader.c",
@@ -28,6 +31,11 @@ if not _ENABLE_TIMING_TUNER:
     _MAIN_APP_SOURCES += [
         "!protopirate_scene_timing_tuner.c",
         "!protocol_timings.c",
+    ]
+
+if not _ENABLE_EMULATE:
+    _MAIN_APP_SOURCES += [
+        "!protopirate_scene_emulate.c",
     ]
 
 App(
@@ -165,7 +173,11 @@ def ProtoPirateTxProtocolPlugin(
     App=App,
     FlipperAppType=FlipperAppType,
     tx_plugin_sources=_TX_PLUGIN_SOURCES,
+    enable_emulate=_ENABLE_EMULATE,
 ):
+    if not enable_emulate:
+        return
+
     App(
         appid=f"protopirate_tx_{key}_plugin",
         apptype=FlipperAppType.PLUGIN,
@@ -370,17 +382,18 @@ if _ENABLE_TIMING_TUNER:
         fal_embedded=True,
     )
 
-App(
-    appid="protopirate_emulate_plugin",
-    apptype=FlipperAppType.PLUGIN,
-    entry_point="protopirate_emulate_plugin_ep",
-    requires=["proto_pirate"],
-    sources=[
-        "scenes/plugins/protopirate_emulate_plugin.c",
-        "protocols/protocol_items.c",
-    ],
-    fal_embedded=True,
-)
+if _ENABLE_EMULATE:
+    App(
+        appid="protopirate_emulate_plugin",
+        apptype=FlipperAppType.PLUGIN,
+        entry_point="protopirate_emulate_plugin_ep",
+        requires=["proto_pirate"],
+        sources=[
+            "scenes/plugins/protopirate_emulate_plugin.c",
+            "protocols/protocol_items.c",
+        ],
+        fal_embedded=True,
+    )
 
 App(
     appid="protopirate_psa_bf_plugin",
