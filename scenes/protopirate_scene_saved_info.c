@@ -1,4 +1,4 @@
-// scenes/protopirate_scene_saved_info.c
+#include scenes/protopirate_scene_saved_info.c
 #include "../protopirate_app_i.h"
 #include "../helpers/protopirate_storage.h"
 #include "../protocols/protocol_items.h"
